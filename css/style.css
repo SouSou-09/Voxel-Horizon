@@ -1,0 +1,488 @@
+/* ==========================================================
+   クラフトワールド 3D — UI スタイル
+   ========================================================== */
+:root {
+  --atlas: none;                 /* JSで実行時にテクスチャアトラスを注入 */
+  --panel-bg: rgba(20, 20, 24, 0.92);
+  --slot-bg: rgba(139, 139, 139, 0.35);
+  --slot-border: #5c5c5c;
+  --accent: #7fd35b;
+  --text: #f2f2f2;
+}
+
+/* バージョン表示ラベル (スタート/ポーズ画面) */
+.version-label {
+  color: #9fd97f;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-align: center;
+  opacity: 0.9;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #6ea8f0;
+  color: var(--text);
+  font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+  user-select: none; -webkit-user-select: none;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+#game-root { position: fixed; inset: 0; }
+#game-canvas { display: block; width: 100%; height: 100%; }
+.hidden { display: none !important; }
+
+/* ---------- v0.11.1: ゲームモードカード (Bloxd風) ---------- */
+.mode-cards {
+  display: flex; gap: 12px; justify-content: center;
+  margin: 18px 0 8px; flex-wrap: wrap;
+}
+.mode-card {
+  flex: 1 1 150px; max-width: 210px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 16px 12px; cursor: pointer;
+  background: rgba(30, 32, 38, 0.85);
+  border: 3px solid #3a3d44; border-radius: 12px;
+  color: var(--text); transition: transform .12s, border-color .12s, background .12s;
+}
+.mode-card:hover { transform: translateY(-3px); background: rgba(48, 52, 62, 0.9); }
+.mode-card.selected { border-color: var(--accent); background: rgba(50, 70, 44, 0.85); box-shadow: 0 0 0 2px rgba(127, 211, 91, .35); }
+.mode-card .mode-icon { font-size: 34px; line-height: 1; }
+.mode-card .mode-name { font-size: 16px; font-weight: 700; }
+.mode-card .mode-desc { font-size: 11.5px; color: #b8bcc4; line-height: 1.4; }
+.mc-btn.primary { background: linear-gradient(#6fbf4a, #57a437); font-weight: 700; }
+
+/* ---------- v0.11: クリエイティブ画面 (Minecraft風) ---------- */
+.inv-panel { display: flex; gap: 12px; width: min(920px, 96vw); max-width: 96vw; }
+.inv-main-area { flex: 1; min-width: 0; overflow: hidden; }
+#creative-blocks {
+  width: 280px; flex-shrink: 0; min-width: 0;
+  background: rgba(12, 12, 14, 0.95);
+  border: 2px solid #3a3a3a; border-radius: 8px;
+  padding: 10px; display: flex; flex-direction: column;
+}
+#creative-blocks h3 { font-size: 15px; margin-bottom: 8px; color: #e8e8e8; }
+#creative-search {
+  width: 100%; padding: 6px 8px; margin-bottom: 8px;
+  background: #1a1a1e; color: var(--text);
+  border: 2px solid #3a3a3a; border-radius: 4px; font-size: 13px;
+}
+#creative-search:focus { outline: none; border-color: var(--accent); }
+#creative-grid { overflow-y: auto; max-height: 56vh; min-height: 0; }
+.creative-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.creative-tab {
+  padding: 4px 8px; font-size: 12px; cursor: pointer;
+  background: #2a2a2e; color: #c8c8c8;
+  border: 1px solid #444; border-radius: 4px;
+}
+.creative-tab.active { background: #4a4a50; color: #fff; border-color: var(--accent); }
+.creative-item-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 4px;
+}
+.creative-slot {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  background: var(--slot-bg); border: 2px solid var(--slot-border);
+  border-radius: 4px; cursor: pointer; position: relative;
+}
+.creative-slot:hover { border-color: #fff; background: rgba(180,180,180,.45); }
+.creative-slot .icon {
+  width: 32px; height: 32px;
+  background-image: var(--atlas);
+  background-size: 1600% 1600%;
+  image-rendering: pixelated; pointer-events: none;
+}
+.creative-slot .creative-label { display: none; }
+@media (max-width: 700px) {
+  .inv-panel { flex-direction: column; width: min(560px, 96vw); }
+  #creative-blocks { width: 100%; }
+  #creative-grid { max-height: 28vh; }
+}
+
+/* ---------- HUD ---------- */
+#hud { position: absolute; inset: 0; pointer-events: none; z-index: 8; }
+
+#crosshair {
+  position: absolute; left: 50%; top: 50%;
+  width: 22px; height: 22px; margin: -11px 0 0 -11px;
+  opacity: .85;
+}
+#crosshair::before, #crosshair::after {
+  content: ""; position: absolute; background: #fff;
+  box-shadow: 0 0 2px rgba(0,0,0,.9);
+}
+#crosshair::before { left: 50%; top: 0; width: 2px; height: 100%; margin-left: -1px; }
+#crosshair::after  { top: 50%; left: 0; height: 2px; width: 100%; margin-top: -1px; }
+
+#status-bars {
+  position: absolute; left: 50%; bottom: 74px;
+  transform: translateX(-50%);
+  width: min(420px, 92vw);
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px;
+}
+.stat-bar { display: flex; gap: 1px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.8)); }
+.stat-bar .icon { width: 15px; height: 15px; font-size: 13px; line-height: 15px; text-align: center; }
+#air-bar { width: 100%; justify-content: flex-end; }
+
+#hotbar {
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+  display: flex; gap: 3px; padding: 4px;
+  background: rgba(0,0,0,.45); border-radius: 8px;
+  pointer-events: auto;
+}
+
+.slot {
+  position: relative;
+  width: 46px; height: 46px;
+  background: var(--slot-bg);
+  border: 2px solid var(--slot-border);
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.slot.selected { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.4) inset; }
+.slot .icon {
+  width: 34px; height: 34px;
+  background-image: var(--atlas);
+  background-size: 1600% 1600%;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.slot .count {
+  position: absolute; right: 2px; bottom: 0;
+  font-size: 12px; font-weight: 700;
+  text-shadow: 1px 1px 0 #000; pointer-events: none;
+}
+.slot .durability {
+  position: absolute; left: 3px; right: 3px; bottom: 3px; height: 3px;
+  background: #222; border-radius: 2px; overflow: hidden; pointer-events: none;
+}
+.slot .durability span { display: block; height: 100%; background: var(--accent); }
+
+#item-name-popup {
+  position: absolute; left: 50%; bottom: 66px; transform: translateX(-50%);
+  padding: 2px 10px; background: rgba(0,0,0,.5); border-radius: 4px;
+  font-size: 13px; opacity: 0; transition: opacity .3s;
+}
+#item-name-popup.show { opacity: 1; }
+
+#toast-area {
+  position: absolute; left: 50%; top: 14%; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 6px; align-items: center;
+}
+
+/* ---------- v0.13.2: ボス体力バー ---------- */
+#boss-bar {
+  position: absolute; left: 50%; top: 14px; transform: translateX(-50%);
+  width: min(520px, 86vw); text-align: center; pointer-events: none;
+}
+#boss-bar-name {
+  font-size: 15px; font-weight: 700; color: #e8d8ff;
+  text-shadow: 1px 1px 0 #000, 0 0 8px rgba(150, 80, 220, .8);
+  margin-bottom: 3px;
+}
+#boss-bar-track {
+  height: 10px; background: rgba(10, 5, 18, .8);
+  border: 2px solid #3a2a52; border-radius: 5px; overflow: hidden;
+}
+#boss-bar-fill {
+  height: 100%; width: 100%;
+  background: linear-gradient(#d96fff, #9b30d0);
+  transition: width .18s ease-out;
+}
+.toast {
+  padding: 6px 14px; background: rgba(0,0,0,.6); border-radius: 6px;
+  font-size: 14px; animation: toastIn .25s ease-out;
+}
+.toast.warn { background: rgba(170, 40, 30, .75); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; } }
+
+#debug-panel {
+  position: absolute; left: 8px; top: 60px;
+  background: rgba(0,0,0,.5); padding: 8px 10px; border-radius: 6px;
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.5;
+  white-space: pre;
+}
+
+.corner-btn {
+  position: absolute; right: 10px; top: 10px;
+  width: 42px; height: 42px; font-size: 20px;
+  background: rgba(0,0,0,.45); color: #fff;
+  border: 2px solid rgba(255,255,255,.25); border-radius: 8px;
+  pointer-events: auto; cursor: pointer;
+}
+#clock-display {
+  position: absolute; right: 62px; top: 10px;
+  padding: 8px 12px; background: rgba(0,0,0,.45); border-radius: 8px;
+  font-size: 14px; font-variant-numeric: tabular-nums;
+}
+
+/* ---------- タッチ操作 ---------- */
+#touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+#joystick-zone {
+  position: absolute; left: 0; bottom: 0;
+  width: 45%; height: 55%;
+  pointer-events: auto;
+}
+#joystick-base {
+  position: absolute; left: 26px; bottom: 26px;
+  width: 128px; height: 128px; border-radius: 50%;
+  background: rgba(255,255,255,.12);
+  border: 2px solid rgba(255,255,255,.3);
+}
+#joystick-knob {
+  position: absolute; left: 50%; top: 50%;
+  width: 56px; height: 56px; margin: -28px 0 0 -28px;
+  border-radius: 50%; background: rgba(255,255,255,.45);
+  border: 2px solid rgba(255,255,255,.6);
+}
+#look-zone {
+  position: absolute; right: 0; top: 0; width: 50%; height: 100%;
+  pointer-events: auto;
+}
+#touch-buttons {
+  position: absolute; right: 18px; bottom: 24px;
+  display: grid; grid-template-columns: repeat(2, auto); gap: 12px;
+  pointer-events: none;
+}
+.tbtn-row {
+  grid-column: 1 / -1;
+  display: flex; gap: 12px; justify-content: flex-end;
+}
+.tbtn {
+  width: 68px; height: 68px; border-radius: 50%;
+  background: rgba(0,0,0,.4); color: #fff; font-size: 20px;
+  border: 2px solid rgba(255,255,255,.35);
+  pointer-events: auto; cursor: pointer;
+}
+.tbtn.big { width: 76px; height: 76px; font-size: 26px; }
+.tbtn.small { width: 52px; height: 52px; font-size: 15px; }
+.tbtn:active, .tbtn.active { background: rgba(255,255,255,.35); }
+/* v0.8: SVGアイコン */
+.tbtn svg { width: 62%; height: 62%; display: block; margin: auto; }
+.tbtn.small svg { width: 58%; height: 58%; }
+
+/* ==========================================================
+   v0.8: Minecraft風スタート画面
+   ========================================================== */
+.mc-title {
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(120,170,255,.18), transparent 60%),
+    linear-gradient(180deg, #7db3e8 0%, #9cc8ee 34%, #79b25a 34.5%, #5d9a44 55%, #8a6a48 55.5%, #6e5138 100%);
+  backdrop-filter: none;
+  align-items: flex-start;
+  padding-top: max(6vh, 24px);
+}
+.mc-inner { width: min(560px, 94vw); text-align: center; }
+.mc-logo {
+  margin: 0 0 4px;
+  font-size: clamp(38px, 9vw, 66px);
+  font-weight: 800;
+  letter-spacing: 2px;
+  line-height: 1.05;
+  color: #e8e8e8;
+  text-shadow:
+    0 3px 0 #3f3f3f, 3px 0 0 #3f3f3f, -3px 0 0 #3f3f3f, 0 -3px 0 #3f3f3f,
+    2px 2px 0 #3f3f3f, -2px 2px 0 #3f3f3f, 2px -2px 0 #3f3f3f, -2px -2px 0 #3f3f3f,
+    0 8px 14px rgba(0,0,0,.45);
+}
+.mc-logo-main { display: block; }
+.mc-logo-sub {
+  display: inline-block; margin-top: 2px;
+  font-size: .42em; letter-spacing: 10px; color: #ffd83d;
+}
+.mc-splash {
+  margin: 2px 0 22px;
+  font-size: 15px; font-weight: 700; color: #ffff54;
+  text-shadow: 1px 1px 0 #3a3a00;
+  transform: rotate(-2deg);
+  animation: mcSplash 0.6s ease-in-out infinite alternate;
+}
+@keyframes mcSplash { from { transform: rotate(-2deg) scale(1); } to { transform: rotate(-2deg) scale(1.06); } }
+.mc-menu { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.mc-btn {
+  width: min(360px, 88vw);
+  padding: 13px 10px;
+  font-size: 17px; font-weight: 700; color: #fff;
+  font-family: inherit;
+  background: linear-gradient(180deg, #6f6f6f 0%, #5a5a5a 45%, #4c4c4c 100%);
+  border: 2px solid #000;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.28), inset 0 -3px 0 rgba(0,0,0,.4), 0 3px 6px rgba(0,0,0,.4);
+  text-shadow: 2px 2px 0 rgba(0,0,0,.6);
+  cursor: pointer; border-radius: 3px;
+}
+.mc-btn:hover { background: linear-gradient(180deg, #7e93c4 0%, #63779f 45%, #55688c 100%); }
+.mc-btn:active { transform: translateY(1px); }
+#btn-continue { display: none; }
+.mc-row {
+  display: flex; align-items: center; gap: 10px;
+  width: min(360px, 88vw);
+}
+.mc-label { font-size: 14px; font-weight: 700; color: #fff; text-shadow: 1px 1px 0 #000; white-space: nowrap; }
+.mc-select, .mc-input {
+  flex: 1; padding: 9px 10px;
+  font-size: 15px; font-family: inherit; color: #fff;
+  background: #1c1c1e; border: 2px solid #000;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.6);
+  border-radius: 3px; outline: none;
+}
+.mc-select:focus, .mc-input:focus { border-color: #fff; }
+.mc-version { margin-top: 22px; font-size: 13px; color: #fff; text-shadow: 1px 1px 0 #000; opacity: .9; }
+.mc-copyright { margin-top: 6px; font-size: 11px; color: #fff; text-shadow: 1px 1px 0 #000; opacity: .7; }
+
+/* v0.8: ゲームモード別 HUD */
+.mode-spectator #status-bars { display: none; }
+.mode-spectator #crosshair { display: none; }
+.mode-creative #status-bars { display: none; }
+
+/* 常時表示ステータス */
+#status-display {
+  position: absolute; left: 8px; top: 8px;
+  padding: 5px 10px; border-radius: 6px;
+  background: rgba(0,0,0,.4);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px; font-variant-numeric: tabular-nums;
+  pointer-events: none; z-index: 9;
+}
+
+/* バージョン表示 (画面左上) */
+#version-display {
+  position: absolute; left: 8px; top: 34px;
+  padding: 4px 10px; border-radius: 6px;
+  background: rgba(0,0,0,.4);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px; color: #ffd97a;
+  pointer-events: none; z-index: 9;
+}
+.start-version {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px; color: #ffd97a; opacity: .85; margin: -8px 0 12px;
+}
+.pause-version {
+  margin-top: 10px; font-size: 12px; opacity: .6;
+}
+
+/* ---------- オーバーレイ画面 ---------- */
+.overlay-screen {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(3px);
+  padding: 12px; overflow: auto;
+}
+.panel {
+  background: var(--panel-bg);
+  border: 2px solid #4a4a52; border-radius: 12px;
+  padding: 16px; width: min(560px, 96vw);
+  box-shadow: 0 12px 40px rgba(0,0,0,.55);
+}
+.panel.narrow { width: min(400px, 94vw); text-align: center; }
+.panel h1 { font-size: 34px; letter-spacing: 1px; margin-bottom: 6px; }
+.panel h1 span { color: var(--accent); }
+.panel h2 { font-size: 20px; margin-bottom: 10px; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; }
+.close-btn {
+  width: 34px; height: 34px; border-radius: 6px; cursor: pointer;
+  background: rgba(255,255,255,.1); border: 1px solid #666; color: #fff; font-size: 16px;
+}
+.tagline { font-size: 14px; opacity: .8; margin-bottom: 14px; }
+.hint { font-size: 12px; opacity: .65; margin: 8px 0; line-height: 1.6; }
+
+.menu-btn {
+  display: block; width: 100%; margin: 8px 0; padding: 12px;
+  font-size: 16px; font-weight: 600; color: #fff; cursor: pointer;
+  background: #3c3f46; border: 2px solid #62666e; border-radius: 8px;
+}
+.menu-btn:hover { background: #4a4e57; }
+.menu-btn.primary { background: #3f7d33; border-color: #63b053; }
+.menu-btn.danger { background: #7d3333; border-color: #b05353; }
+
+.setting { display: block; text-align: left; font-size: 14px; margin: 12px 0; }
+.setting input[type=range] { width: 100%; margin-top: 6px; }
+.setting input[type=text] {
+  width: 100%; margin-top: 6px; padding: 10px; border-radius: 6px;
+  border: 1px solid #666; background: #1c1c20; color: #fff; font-size: 14px;
+}
+.setting.checkbox { display: flex; align-items: center; gap: 8px; }
+.setting.checkbox input { width: 18px; height: 18px; }
+
+/* ---------- スロットグリッド ---------- */
+.grid-slots { display: grid; gap: 4px; justify-content: center; }
+#craft-grid { grid-template-columns: repeat(2, auto); }
+#craft-grid.big { grid-template-columns: repeat(3, auto); }
+#craft-output, #furnace-input, #furnace-output, #furnace-fuel { grid-template-columns: auto; }
+.grid-slots.wide { grid-template-columns: repeat(9, auto); margin-top: 10px; }
+#inv-hotbar { margin-top: 14px; }
+
+.craft-area {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin: 14px 0 4px;
+}
+.arrow { font-size: 24px; opacity: .7; }
+
+.furnace-area {
+  display: grid; grid-template-columns: auto auto auto;
+  grid-template-areas: "in mid out" "fuel mid out";
+  gap: 10px; justify-content: center; align-items: center; margin: 14px 0;
+}
+#furnace-input { grid-area: in; }
+#furnace-fuel { grid-area: fuel; }
+.furnace-mid { grid-area: mid; text-align: center; }
+#furnace-output { grid-area: out; }
+#furnace-output .slot { width: 60px; height: 60px; }
+#furnace-output .slot .icon { width: 44px; height: 44px; }
+#burn-indicator { font-size: 22px; opacity: .25; transition: opacity .2s; }
+#burn-indicator.on { opacity: 1; }
+#smelt-progress { width: 70px; height: 10px; background: #333; border-radius: 5px; margin: 8px auto 0; overflow: hidden; }
+#smelt-progress span { display: block; height: 100%; width: 0; background: var(--accent); }
+
+#held-stack {
+  position: absolute; z-index: 40; width: 44px; height: 44px;
+  pointer-events: none; transform: translate(-50%, -50%);
+}
+#held-stack .icon {
+  width: 100%; height: 100%;
+  background-image: var(--atlas); background-size: 1600% 1600%;
+  image-rendering: pixelated;
+}
+#held-stack .count {
+  position: absolute; right: 0; bottom: 0; font-size: 13px; font-weight: 700; text-shadow: 1px 1px 0 #000;
+}
+
+/* ---------- ローディング ---------- */
+.loading-inner { text-align: center; }
+.loader-block {
+  width: 48px; height: 48px; margin: 0 auto 16px;
+  background: var(--accent); border-radius: 6px;
+  animation: spinBlock 1.1s ease-in-out infinite;
+}
+@keyframes spinBlock {
+  0% { transform: rotate(0) scale(1); }
+  50% { transform: rotate(180deg) scale(.7); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+.death h2 { color: #ff7d6b; }
+
+/* ---------- 小型画面 ---------- */
+@media (max-width: 520px) {
+  .slot { width: 38px; height: 38px; }
+  .slot .icon { width: 28px; height: 28px; }
+  #status-bars { bottom: 64px; width: 96vw; }
+  #hotbar { gap: 2px; }
+  .panel { padding: 12px; }
+  .panel h1 { font-size: 26px; }
+  #joystick-base { width: 108px; height: 108px; left: 18px; bottom: 18px; }
+  #joystick-knob { width: 48px; height: 48px; margin: -24px 0 0 -24px; }
+  .tbtn { width: 60px; height: 60px; }
+  .tbtn.big { width: 66px; height: 66px; font-size: 22px; }
+  .tbtn.small { width: 46px; height: 46px; font-size: 13px; }
+  #touch-buttons { right: 10px; bottom: 16px; gap: 8px; }
+  #status-display { font-size: 10px; padding: 4px 7px; }
+}
+@media (max-height: 460px) {
+  #status-bars { bottom: 56px; }
+}
