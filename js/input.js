@@ -185,38 +185,23 @@
     zone.addEventListener('pointerup', endJoy);
     zone.addEventListener('pointercancel', endJoy);
 
-    // 視点ドラッグ (v0.12.2: 長押し = 採掘 / 短いタップ = 設置)
-    let lookId = null, lastX = 0, lastY = 0, moved = 0, downTime = 0, pressTimer = null;
+    // 視点ドラッグ (v0.13.3: 長押し採掘・タップ設置を削除。視点操作のみ。設置/破壊は右下ボタン専用)
+    let lookId = null, lastX = 0, lastY = 0;
     look.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      lookId = e.pointerId; lastX = e.clientX; lastY = e.clientY; moved = 0; downTime = performance.now();
+      lookId = e.pointerId; lastX = e.clientX; lastY = e.clientY;
       look.setPointerCapture(e.pointerId);
-      // 長押し (420ms) で採掘開始。指を動かさず押し続けたときだけ発動。
-      clearTimeout(pressTimer);
-      pressTimer = setTimeout(() => {
-        if (lookId !== null && moved < 14) Input.attack = true;
-      }, 420);
     });
     look.addEventListener('pointermove', (e) => {
       if (e.pointerId !== lookId) return;
       const dx = e.clientX - lastX, dy = e.clientY - lastY;
       lastX = e.clientX; lastY = e.clientY;
-      moved += Math.abs(dx) + Math.abs(dy);
       Input.lookDX += dx * 0.005 * Input.sensitivity;
       Input.lookDY += dy * 0.005 * Input.sensitivity;
-      // 視点を大きく動かしたら長押し採掘は発動させない
-      if (moved >= 14) { clearTimeout(pressTimer); Input.attack = false; }
     });
     const endLook = (e) => {
       if (e.pointerId !== lookId) return;
       lookId = null;
-      clearTimeout(pressTimer);
-      const wasMining = Input.attack;
-      Input.attack = false;
-      // 短いタップ = ブロック設置 (採掘中でなければ)
-      if (!wasMining && moved < 12 && performance.now() - downTime < 260) {
-        Input.usePressed = true;
-      }
     };
     look.addEventListener('pointerup', endLook);
     look.addEventListener('pointercancel', endLook);
