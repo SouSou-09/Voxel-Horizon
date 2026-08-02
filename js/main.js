@@ -1781,6 +1781,21 @@
      起動
      ========================================================== */
   function boot() {
+    // Discord Activity として埋め込まれた場合は SDK の準備を待ってから起動。
+    // 通常ブラウザでは即 resolve され既存動作は変わらない。
+    const sdkReady = (global.DiscordSDK && DiscordSDK.init) ? DiscordSDK.init() : Promise.resolve(false);
+    sdkReady.then(() => {
+      if (global.DiscordSDK && DiscordSDK.isActivity) {
+        // Activity 内ではポインタロックが使えない環境があるため事前にドラッグ視点を許可
+        // (実際にロックが失敗した時点でもフォールバックする二重の安全網)
+        Input.dragLookMode = false;
+        DiscordSDK.setActivity('ワールドを探索中', 'クラフトワールド 3D をプレイ中');
+      }
+      startApp();
+    });
+  }
+
+  function startApp() {
     Input.init($('game-canvas'));
     loadSettings();
     // v0.11.2: 起動時に保存済みの解像度を適用 (World 生成より前)
