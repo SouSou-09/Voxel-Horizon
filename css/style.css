@@ -57,6 +57,23 @@ html, body {
 .mode-card .mode-desc { font-size: 11.5px; color: #b8bcc4; line-height: 1.4; }
 .mc-btn.primary { background: linear-gradient(#6fbf4a, #57a437); font-weight: 700; }
 
+/* ---------- v0.13.3: オンラインワールド一覧 ---------- */
+.mc-online { margin: 18px auto 4px; width: min(520px, 92vw); }
+.mc-online-title { font-size: 15px; color: #b9e6ff; margin-bottom: 8px; text-shadow: 1px 1px 2px #000; }
+.online-worlds-list { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
+.online-world-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 12px; cursor: pointer;
+  background: rgba(20, 32, 46, 0.88); border: 2px solid #3a5a78; border-radius: 9px;
+  color: #eaf6ff; text-align: left; font-size: 13px;
+  transition: border-color .12s, background .12s;
+}
+.online-world-item:hover { border-color: #7fc4ff; background: rgba(30, 46, 66, 0.92); }
+.online-world-item .ow-name { font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.online-world-item .ow-players { font-size: 12px; color: #9fd0ff; flex-shrink: 0; }
+.online-world-item .ow-join { flex-shrink: 0; font-size: 12px; color: #b9ff9f; font-weight: 700; }
+.online-worlds-empty { font-size: 12px; color: #9ab; padding: 6px 4px; text-shadow: 1px 1px 2px #000; }
+
 /* ---------- v0.11: クリエイティブ画面 (Minecraft風) ---------- */
 .inv-panel { display: flex; gap: 12px; width: min(920px, 96vw); max-width: 96vw; }
 .inv-main-area { flex: 1; min-width: 0; overflow: hidden; }
