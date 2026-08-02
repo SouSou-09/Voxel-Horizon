@@ -83,9 +83,23 @@
     /* ---------- マウス ---------- */
     canvas.addEventListener('contextmenu', e => e.preventDefault());
 
+    // Discord Activity ではポインタロックが制限されることがある。
+    // ロック要求が拒否された場合はドラッグ視点にフォールバックする。
+    Input.dragLookMode = false;
+    let dragLast = null;
+
     canvas.addEventListener('pointerdown', (e) => {
       if (Input.touchMode) return;
-      if (!Input.pointerLocked) { canvas.requestPointerLock && canvas.requestPointerLock(); return; }
+      if (!Input.pointerLocked) {
+        if (canvas.requestPointerLock) {
+          try {
+            const p = canvas.requestPointerLock();
+            if (p && p.catch) p.catch(() => { Input.dragLookMode = true; });
+          } catch (err) { Input.dragLookMode = true; }
+        } else { Input.dragLookMode = true; }
+        if (Input.dragLookMode) { dragLast = { x: e.clientX, y: e.clientY }; }
+        return;
+      }
       if (e.button === 0) Input.attack = true;
       if (e.button === 2) { Input.usePressed = true; Input.useHeld = true; }
     });
@@ -101,10 +115,20 @@
     });
 
     document.addEventListener('mousemove', (e) => {
-      if (!Input.pointerLocked) return;
+      if (!Input.pointerLocked) {
+        // Discord Activity 等でロックが使えないときは、キャンバス上の
+        // ドラッグで視点を回すフォールバック
+        if (Input.dragLookMode && dragLast && (e.buttons & 1)) {
+          Input.lookDX += (e.clientX - dragLast.x) * 0.004 * Input.sensitivity;
+          Input.lookDY += (e.clientY - dragLast.y) * 0.004 * Input.sensitivity;
+          dragLast = { x: e.clientX, y: e.clientY };
+        }
+        return;
+      }
       Input.lookDX += e.movementX * 0.0022 * Input.sensitivity;
       Input.lookDY += e.movementY * 0.0022 * Input.sensitivity;
     });
+    window.addEventListener('pointerup', () => { dragLast = null; });
 
     window.addEventListener('wheel', (e) => {
       if (document.querySelector('.overlay-screen:not(.hidden)')) return;
