@@ -36,7 +36,7 @@
       <div id="boss-bar-track"><div id="boss-bar-fill"></div></div>
     </div>
 
-    <div id="status-display" title="バージョン・FPS・座標">v0.13.2 FPS -- X:-- Y:-- Z:--</div>
+    <div id="status-display" title="バージョン・FPS・座標">v0.13.3 FPS -- X:-- Y:-- Z:--</div>
     <div id="debug-panel" class="hidden"></div>
 
     <button id="btn-open-menu" class="corner-btn" title="メニュー">☰</button>
@@ -148,7 +148,7 @@
   <div id="pause-screen" class="overlay-screen hidden">
     <div class="panel narrow">
       <h2>ゲームメニュー</h2>
-      <p class="version-label pause-version">v0.13.2</p>
+      <p class="version-label pause-version">v0.13.3</p>
       <button class="menu-btn" id="btn-resume">ゲームに戻る</button>
       <label class="setting">描画距離 <span id="rd-value">3</span>
         <input type="range" id="set-renderdist" min="2" max="6" step="1" value="3">
@@ -166,6 +166,8 @@
       <label class="setting checkbox"><input type="checkbox" id="set-touch"> タッチ操作を表示</label>
       <label class="setting checkbox"><input type="checkbox" id="set-debuginfo"> デバッグ情報を表示 (F3)</label>
       <button class="menu-btn" id="btn-save">セーブする</button>
+      <label class="setting checkbox"><input type="checkbox" id="set-share"> ワールドを公開 (オンライン)</label>
+      <p class="hint" id="share-status" style="min-height:1.2em"></p>
       <button class="menu-btn danger" id="btn-newworld">新しいワールド</button>
       <p class="hint">操作: WASD移動 / Space ジャンプ / Shift スニーク / 左クリック採掘 / 右クリック設置 / E インベントリ / 1-9 選択 / F3 デバッグ</p>
     </div>
@@ -200,7 +202,12 @@
           <input type="text" id="seed-input" class="mc-input" placeholder="空欄でランダム">
         </div>
       </div>
-      <p class="mc-version"><span class="start-version">v0.13.2</span></p>
+      <!-- オンラインワールド一覧 (v0.13.3: OmniP2P 公開ワールドにだれでも参加) -->
+      <div id="online-worlds-section" class="mc-online hidden">
+        <h2 class="mc-online-title">🌐 オンラインワールド</h2>
+        <div id="online-worlds-list" class="online-worlds-list"></div>
+      </div>
+      <p class="mc-version"><span class="start-version">v0.13.3</span></p>
       <p class="mc-copyright">クラフトワールド 3D — ブラウザで遊べるボクセルサンドボックス</p>
     </div>
   </div>
@@ -216,6 +223,7 @@
 <script src="config.js"></script>
 <script src="js/discord-sdk.js"></script>
 <script src="js/vendor/three.min.js"></script>
+<script src="js/netplay.js"></script>
 <script src="js/version.js"></script>
 <script src="js/noise.js"></script>
 <script src="js/textures.js"></script>
