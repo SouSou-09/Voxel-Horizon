@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#79b0ff">
+<title>クラフトワールド 3D — サバイバル</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== 3D 描画キャンバス ===== -->
+<main id="game-root">
+  <canvas id="game-canvas"></canvas>
+
+  <!-- ===== HUD ===== -->
+  <div id="hud" class="hidden">
+    <div id="crosshair" aria-hidden="true"></div>
+
+    <section id="status-bars">
+      <div id="health-bar" class="stat-bar" aria-label="体力"></div>
+      <div id="air-bar" class="stat-bar hidden" aria-label="酸素"></div>
+      <div id="hunger-bar" class="stat-bar" aria-label="満腹度"></div>
+    </section>
+
+    <section id="hotbar" aria-label="ホットバー"></section>
+
+    <div id="item-name-popup"></div>
+    <div id="toast-area" aria-live="polite"></div>
+
+    <!-- v0.13.2: ボス体力バー (エンダードラゴン) -->
+    <div id="boss-bar" class="hidden" aria-label="ボス体力">
+      <div id="boss-bar-name">エンダードラゴン</div>
+      <div id="boss-bar-track"><div id="boss-bar-fill"></div></div>
+    </div>
+
+    <div id="status-display" title="バージョン・FPS・座標">v0.13.2 FPS -- X:-- Y:-- Z:--</div>
+    <div id="debug-panel" class="hidden"></div>
+
+    <button id="btn-open-menu" class="corner-btn" title="メニュー">☰</button>
+    <div id="clock-display" title="ワールド時間">☀ 06:00</div>
+  </div>
+
+  <!-- ===== モバイル操作 ===== -->
+  <div id="touch-controls" class="hidden">
+    <div id="joystick-zone">
+      <div id="joystick-base"><div id="joystick-knob"></div></div>
+    </div>
+    <div id="look-zone"></div>
+    <div id="touch-buttons">
+      <!-- v0.8: ↑ = ジャンプ / ↓ = しゃがみ。アイコンは全てSVG -->
+      <button class="tbtn big" id="tb-jump" aria-label="ジャンプ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+      </button>
+      <button class="tbtn big" id="tb-attack" aria-label="採掘・攻撃">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 3.5l6 6-3.5 3.5-6-6z"/><path d="M12 8L4.5 15.5"/><path d="M3 21l4.5-4.5"/></svg>
+      </button>
+      <button class="tbtn big" id="tb-place" aria-label="設置">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7l8.5 4.4v9.8L12 21.3l-8.5-4.4V7.1z"/><path d="M3.5 7.1L12 11.6l8.5-4.5"/><path d="M12 11.6v9.7"/></svg>
+      </button>
+      <div class="tbtn-row">
+        <button class="tbtn small" id="tb-sneak" aria-label="しゃがみ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+        </button>
+        <button class="tbtn small" id="tb-sprint" aria-label="ダッシュ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l6-6v12z"/><path d="M14 12l6-6v12z"/></svg>
+        </button>
+        <button class="tbtn small" id="tb-inv" aria-label="インベントリ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16v12H4z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== インベントリ画面 ===== -->
+  <div id="inventory-screen" class="overlay-screen hidden">
+    <div class="panel inv-panel">
+      <!-- v0.11: クリエイティブ用ブロック一覧 (左パネル、Minecraft風) -->
+      <aside id="creative-blocks" class="hidden">
+        <h3 id="creative-title">ブロック</h3>
+        <input type="search" id="creative-search" placeholder="検索…" autocomplete="off">
+        <div id="creative-grid"></div>
+        <p class="hint">クリックで選択スロットに64個</p>
+      </aside>
+      <section class="inv-main-area">
+      <header class="panel-head">
+        <h2 id="inv-title">インベントリ</h2>
+        <button class="close-btn" data-close="inventory-screen">✕</button>
+      </header>
+      <div class="craft-area">
+        <div id="craft-grid" class="grid-slots"></div>
+        <div class="arrow">➜</div>
+        <div id="craft-output" class="grid-slots"></div>
+      </div>
+      <p class="hint" id="craft-hint">2×2 クラフト（作業台で3×3）</p>
+      <div id="inv-main" class="grid-slots wide"></div>
+      <div id="inv-hotbar" class="grid-slots wide"></div>
+      <p class="hint">スロットをタップ／クリックで持ち上げ・置く。長押し(右クリック)で1個ずつ。</p>
+      </section>
+    </div>
+  </div>
+
+  <!-- ===== かまど画面 ===== -->
+  <div id="furnace-screen" class="overlay-screen hidden">
+    <div class="panel">
+      <header class="panel-head">
+        <h2>かまど</h2>
+        <button class="close-btn" data-close="furnace-screen">✕</button>
+      </header>
+      <div class="furnace-area">
+        <div id="furnace-input" class="grid-slots"></div>
+        <div class="furnace-mid">
+          <div id="burn-indicator">🔥</div>
+          <div id="smelt-progress"><span></span></div>
+        </div>
+        <div id="furnace-output" class="grid-slots"></div>
+        <div id="furnace-fuel" class="grid-slots"></div>
+      </div>
+      <p class="hint">上＝精錬する物 / 下＝燃料（石炭・木材）</p>
+      <div id="furnace-inv" class="grid-slots wide"></div>
+      <div id="furnace-inv-hotbar" class="grid-slots wide"></div>
+    </div>
+  </div>
+
+  <!-- ===== チェスト画面 ===== -->
+  <div id="chest-screen" class="overlay-screen hidden">
+    <div class="panel">
+      <header class="panel-head">
+        <h2>チェスト</h2>
+        <button class="close-btn" data-close="chest-screen">✕</button>
+      </header>
+      <div id="chest-slots" class="grid-slots wide"></div>
+      <p class="hint">上＝チェスト（27スロット） / 下＝手持ち</p>
+      <div id="chest-inv" class="grid-slots wide"></div>
+      <div id="chest-inv-hotbar" class="grid-slots wide"></div>
+    </div>
+  </div>
+
+  <!-- 持ち運び中のアイテム -->
+  <div id="held-stack" class="hidden"></div>
+
+  <!-- ===== 作物成長表示 ===== -->
+  <div id="crop-tooltip" class="hidden"></div>
+
+  <!-- ===== ポーズ / 設定 ===== -->
+  <div id="pause-screen" class="overlay-screen hidden">
+    <div class="panel narrow">
+      <h2>ゲームメニュー</h2>
+      <p class="version-label pause-version">v0.13.2</p>
+      <button class="menu-btn" id="btn-resume">ゲームに戻る</button>
+      <label class="setting">描画距離 <span id="rd-value">3</span>
+        <input type="range" id="set-renderdist" min="2" max="6" step="1" value="3">
+      </label>
+      <label class="setting">視点感度 <span id="sens-value">1.0</span>
+        <input type="range" id="set-sensitivity" min="0.3" max="2.5" step="0.1" value="1">
+      </label>
+      <label class="setting">テクスチャ解像度
+        <select id="set-texsize">
+          <option value="8">8×8 (軽量)</option>
+          <option value="16">16×16 (標準)</option>
+          <option value="32">32×32 (高画質)</option>
+        </select>
+      </label>
+      <label class="setting checkbox"><input type="checkbox" id="set-touch"> タッチ操作を表示</label>
+      <label class="setting checkbox"><input type="checkbox" id="set-debuginfo"> デバッグ情報を表示 (F3)</label>
+      <button class="menu-btn" id="btn-save">セーブする</button>
+      <button class="menu-btn danger" id="btn-newworld">新しいワールド</button>
+      <p class="hint">操作: WASD移動 / Space ジャンプ / Shift スニーク / 左クリック採掘 / 右クリック設置 / E インベントリ / 1-9 選択 / F3 デバッグ</p>
+    </div>
+  </div>
+
+  <!-- ===== 死亡画面 ===== -->
+  <div id="death-screen" class="overlay-screen hidden">
+    <div class="panel narrow death">
+      <h2>やられてしまった…</h2>
+      <p id="death-reason"></p>
+      <button class="menu-btn" id="btn-respawn">リスポーン</button>
+    </div>
+  </div>
+
+  <!-- ===== スタート画面 (v0.11.1: Bloxd風ゲームモード選択式に刷新) ===== -->
+  <div id="start-screen" class="overlay-screen mc-title">
+    <div class="mc-inner">
+      <h1 class="mc-logo" aria-label="クラフトワールド 3D">
+        <span class="mc-logo-main">クラフトワールド</span>
+        <span class="mc-logo-sub">3D</span>
+      </h1>
+      <p class="mc-splash" id="splash-text">ブロックを掘って、集めて、作って、生き延びろ。</p>
+
+      <!-- ゲームモードカード (今後のモード追加に対応しやすい構造) -->
+      <div id="mode-cards" class="mode-cards" role="listbox" aria-label="ゲームモード選択"></div>
+
+      <div class="mc-menu">
+        <button class="mc-btn primary" id="btn-newgame">あたらしくはじめる</button>
+        <button class="mc-btn" id="btn-continue">つづきから</button>
+        <div class="mc-row">
+          <label class="mc-label" for="seed-input">シード</label>
+          <input type="text" id="seed-input" class="mc-input" placeholder="空欄でランダム">
+        </div>
+      </div>
+      <p class="mc-version"><span class="start-version">v0.13.2</span></p>
+      <p class="mc-copyright">クラフトワールド 3D — ブラウザで遊べるボクセルサンドボックス</p>
+    </div>
+  </div>
+
+  <div id="loading-screen" class="overlay-screen hidden">
+    <div class="loading-inner">
+      <div class="loader-block"></div>
+      <p id="loading-text">ワールドを生成中…</p>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="js/version.js"></script>
+<script src="js/noise.js"></script>
+<script src="js/textures.js"></script>
+<script src="js/blocks.js"></script>
+<script src="js/collision.js"></script>
+<script src="js/crops.js"></script>
+<script src="js/inventory.js"></script>
+<script src="js/world.js"></script>
+<script src="js/player.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/input.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
