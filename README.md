@@ -9,6 +9,35 @@ Three.js だけで動く「マインクラフト風」3Dサバイバルゲーム
 
 ---
 
+## Discord Activity 対応 (v0.13.2 追加)
+
+本ゲームは **Discord の Activity (Embedded App)** としても動作します。
+
+### 追加ファイル
+| ファイル | 役割 |
+|---|---|
+| `js/discord-sdk.js` | Embedded App SDK の読み込みと初期化。Activity 内のみ有効化し、(1) Discordクライアントの ready 待機 (2) Rich Presence (`setActivity`) 表示 (3) `localStorage` を「クライアント×チャンネル」で名前空間化 (`cw3d_dc_<channelId>:` プレフィックス) (4) ポインタロック失敗時のドラッグ視点フォールバック、を提供 |
+| `config.js` | `APP_CONFIG.DISCORD_CLIENT_ID`（Developer Portal の Application ID）をここに設定 |
+| `js/vendor/three.min.js` | Three.js r149 をローカル同梱（Activity 環境で CDN 外部通信が制限される場合への対策） |
+
+### 変更ファイル
+- `index.html` — `config.js` / `js/discord-sdk.js` / ローカル Three.js を読み込み順に追加
+- `js/main.js` — `boot()` で `DiscordSDK.init()` の完了を待ってからゲームを起動（通常ブラウザでは即時開始のまま）
+- `js/input.js` — ポインタロック要求が拒否された場合にドラッグ視点へ自動フォールバック
+
+### セットアップ手順
+1. [Discord Developer Portal](https://discord.com/developers/applications) でアプリを作成し **Activities → Embedded App** を有効化
+2. **Application ID** を `config.js` の `DISCORD_CLIENT_ID` に貼り付け
+3. 本プロジェクトを公開（Publish）し、その URL を Developer Portal の **Activity URL** に設定
+4. サーバーのチャンネルで「アクティビティを開始」から起動
+
+### 動作の特記
+- **通常ブラウザでは従来通り**（SDK は検出されず無効、起動も即時）
+- セーブは `craftworld3d_save_v1`（通常）と、Activity 内では `cw3d_dc_<channelId>:craftworld3d_save_v1` に分離され、チャンネルごとに独立したワールドを保持
+- Activity 内でポインタロックが制限されている環境では、キャンバス上の**左ドラッグで視点回転**に自動切替
+
+---
+
 ## v0.13.2 — エンド次元＆エンダードラゴン
 - **エンド次元を実装**：虚空に浮かぶエンドストーンの浮島群（中央の大島 `d0<76` ＋平坦なボスアリーナ `d0<14`、外縁の小島バンド 90-220）。黒い星空の空（`SKY_END 0x0a0812`、星の不透明度0.9・薄い霧・daylight 0.5 固定）で天候は発生せず、時計表示は「🐉 エンド」。中央島には黒曜石柱リング（8本・高さ6-14・先端にクリスタル台座）、外縁の島にはシュルームライトが灯る
 - **エンドポータル部屋**：オーバーワールド地下の新構造物（どのバイオームでも約6%）。丸石/苔むした丸石の9×9×5の遺跡に5×5のエンドポータルフレーム＋内部3×3のエンドポータル（床下は黒曜石板）。番人ゾンビ2体とダンジョン級の宝チェストつき
