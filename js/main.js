@@ -458,9 +458,11 @@
     if (above === ID.torch) {
       w.setBlock(x, y + 1, z, 0);
       Game.entities.dropItem(x + 0.5, y + 1.4, z + 0.5, 'torch', 1);
+      NetBroadcastEdit(x, y + 1, z, 0);
     }
     if (w.crops) w.crops.onBlockBroken(x, y, z);
     w.applyGravity(x, y + 1, z);
+    NetBroadcastEdit(x, y, z, 0);
 
     if (currentTool()) damageHeldTool(1);
     p.addExhaustion(0.005);
@@ -690,6 +692,7 @@
     w.setBlock(nx, ny, nz, def.block);
     w.applyGravity(nx, ny, nz);
     Sound.place(soundMaterial(bd));
+    NetBroadcastEdit(nx, ny, nz, def.block);
     if (p.gameMode !== 'creative') p.inventory.decrement(p.inventory.selected, 1);   // v0.8: クリエイティブは消費なし
     UI.refreshHotbar();
     updateHandItem();
@@ -1428,6 +1431,15 @@
     for (const [, f] of w.furnaces) f.tick(dt);
     UI.updateFurnaceUI();
 
+    // v0.13.3: オンライン同期 (リモートのブロック変更を適用)
+    if (Net.mode !== 'offline' && Net._remoteEdits && Net._remoteEdits.length) {
+      for (const e of Net._remoteEdits) {
+        w.setBlock(e.x, e.y, e.z, e.id);
+        w.markDirty(e.x >> 4, e.z >> 4);
+      }
+      Net._remoteEdits.length = 0;
+    }
+
     // 足音
     if (p.onGround && !paused) {
       const spd = Math.hypot(p.vel.x, p.vel.z);
@@ -1552,6 +1564,111 @@
     p.inventory.decrement(p.inventory.selected, 1);
     UI.refreshHotbar();
     updateHandItem();
+  }
+
+  /* ==========================================================
+     v0.13.3: オンライン (OmniP2P) 連携
+     ========================================================== */
+  function NetBroadcastEdit(x, y, z, id) {
+    if (Net.mode === 'offline') return;
+    Net.broadcastEdit({ x, y, z, id });
+  }
+
+  // ホスト側: クライアントの編集をワールドに適用 (権威はホスト)
+  global.NetHostApplyEdit = function (msg) {
+    if (!Game.world || !msg || !msg.data) return;
+    const d = msg.data;
+    Game.world.setBlock(d.x, d.y, d.z, d.id);
+    Game.world.markDirty(d.x >> 4, d.z >> 4);
+  };
+
+  // クライアント側: リモート編集をループで適用するためのキュー
+  global.NetClientApplyEdit = function (data) {
+    if (!data) return;
+    Net._remoteEdits = Net._remoteEdits || [];
+    Net._remoteEdits.push(data);
+  };
+
+  // クライアント側: ホストからスナップショットを受信したらワールドを再構築
+  global.NetClientReceiveSnapshot = function (snap) {
+    if (!snap || !snap.seed) return;
+    // 現在のゲームをホストのワールドで置き換える
+    startGame(null, snap, snap.player && snap.player.gameMode || 'survival', { skipNet: true });
+  };
+
+  // ホーム画面のオンラインワールド一覧を描画
+  function renderOnlineWorlds(worlds) {
+    const sec = $('online-worlds-section');
+    const list = $('online-worlds-list');
+    if (!sec || !list) return;
+    list.innerHTML = '';
+    if (!worlds || !worlds.length) {
+      sec.classList.add('hidden');
+      return;
+    }
+    sec.classList.remove('hidden');
+    for (const w of worlds.slice(0, 8)) {
+      const btn = document.createElement('button');
+      btn.className = 'online-world-item';
+      btn.innerHTML =
+        '<span class="ow-name">🌍 ' + (w.name || '無名のワールド') + '</span>' +
+        '<span class="ow-players">👤 ' + (w.players || 1) + '</span>' +
+        '<span class="ow-join">参加 →</span>';
+      btn.addEventListener('click', () => joinOnlineWorld(w));
+      list.appendChild(btn);
+    }
+  }
+
+  async function joinOnlineWorld(w) {
+    UI.toast('🌐 ' + (w.name || 'ワールド') + ' に接続中…');
+    const r = await Net.joinWorld(w.roomId);
+    if (!r.ok) { UI.toast('接続に失敗: ' + (r.error || '不明なエラー'), true); return; }
+    // スナップショット受信 (NetClientReceiveSnapshot) で startGame が呼ばれる
+    UI.toast('ワールドデータを受信中…');
+  }
+
+  global.onNetWorldListChanged = function (worlds) {
+    renderOnlineWorlds(worlds);
+  };
+
+  // 設定画面の「ワールドを公開」トグル
+  async function setWorldShared(shared) {
+    const status = $('share-status');
+    if (shared) {
+      if (!Game.world) { UI.toast('ゲーム中のみ公開できます', true); return false; }
+      if (status) status.textContent = '公開準備中…';
+      const r = await Net.hostWorld('ワールド ' + Game.world.seed, () => {
+        // 新規参加者用のスナップショット (セーブ形式と同じ)
+        const curSnap = {
+          edits: Game.world.serializeEdits(),
+          furnaces: Game.world.serializeFurnaces(),
+          chests: Game.world.serializeChests(),
+          crops: Game.world.crops ? Game.world.crops.serialize() : {},
+          doors: Game.world.serializeDoors ? Game.world.serializeDoors() : []
+        };
+        return {
+          seed: Game.world.seed, time: Game.time, dimension: Game.dimension,
+          edits: curSnap.edits, furnaces: curSnap.furnaces, chests: curSnap.chests,
+          crops: curSnap.crops, doors: curSnap.doors,
+          dims: { overworld: curSnap, nether: null, end: null },
+          player: Game.player.serialize(), savedAt: Date.now()
+        };
+      });
+      if (r.ok) {
+        if (status) status.textContent = '🌐 公開中 (ルーム: ' + r.roomId + ')';
+        UI.toast('ワールドを公開しました。ホーム画面から誰でも参加できます');
+        return true;
+      } else {
+        if (status) status.textContent = '';
+        UI.toast('公開に失敗: ' + (r.error || '不明なエラー'), true);
+        return false;
+      }
+    } else {
+      Net.leave();
+      if (status) status.textContent = '';
+      UI.toast('ワールドの公開を停止しました');
+      return true;
+    }
   }
 
   global.onItemPickup = function (id, count) {
@@ -1775,6 +1892,23 @@
       });
     }
     applyDebugInfo();   // 起動時に設定を反映
+
+    // v0.13.3: ワールド公開 (オンライン) 設定
+    const share = $('set-share');
+    if (share) {
+      share.checked = false;
+      share.addEventListener('change', async () => {
+        const ok = await setWorldShared(share.checked);
+        if (!ok) share.checked = false;
+      });
+    }
+
+    // v0.13.3: オンラインワールド一覧の初期化 (ホーム画面)
+    if (global.Net && Net.init) {
+      Net.init().then((ok) => {
+        if (!ok) console.warn('[Net] OmniP2P 初期化に失敗しました (オフラインのまま)');
+      });
+    }
   }
 
   /* ==========================================================
