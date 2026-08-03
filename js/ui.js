@@ -166,28 +166,74 @@
     refreshAll();
   }
 
+  /* ---------- v0.13.4: モバイル長押し+スライドで取る量を選択 ---------- */
+  function slotPickAmount(container, index, amount) {
+    const cur = getStack(container, index);
+    if (!cur || UI.held) return;
+    const n = Math.max(1, Math.min(amount, cur.count));
+    UI.held = Object.assign({}, cur, { count: n });
+    cur.count -= n;
+    if (cur.count <= 0) setStack(container, index, null);
+    refreshAll();
+  }
+
   function attachSlotEvents(el) {
     let timer = null, longPressed = false;
+    let touchStartY = 0, touchPickN = 0, badge = null;
+    const isTouch = () => (navigator.maxTouchPoints > 0) || ('ontouchstart' in window);
+
     el.addEventListener('contextmenu', e => e.preventDefault());
     el.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      longPressed = false;
+      longPressed = false; touchPickN = 0;
       if (e.button === 2) {
         slotAction(el.dataset.container, +el.dataset.index, true);
         longPressed = true;
         return;
       }
+      touchStartY = e.clientY;
       timer = setTimeout(() => {
-        longPressed = true;
-        slotAction(el.dataset.container, +el.dataset.index, true);
+        if (!isTouch()) {
+          // マウス長押し: 従来通り右クリック相当 (半分 or 1個置き)
+          longPressed = true;
+          slotAction(el.dataset.container, +el.dataset.index, true);
+          return;
+        }
+        // タッチ長押し: 数量選択モード (スライドで量を決める)
+        const cur = getStack(el.dataset.container, +el.dataset.index);
+        if (!cur || UI.held) return;
+        longPressed = true; touchPickN = 1;
+        badge = document.createElement('span');
+        badge.className = 'pick-badge';
+        badge.textContent = '1/' + cur.count;
+        el.appendChild(badge);
       }, 350);
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (!touchPickN || !badge) return;
+      const cur = getStack(el.dataset.container, +el.dataset.index);
+      if (!cur) return;
+      // 上にスライドで増・下で減 (8pxごとに1個)
+      const dy = touchStartY - e.clientY;
+      touchPickN = Math.max(1, Math.min(cur.count, 1 + Math.round(dy / 8)));
+      badge.textContent = touchPickN + '/' + cur.count;
     });
     el.addEventListener('pointerup', (e) => {
       e.preventDefault();
       if (timer) { clearTimeout(timer); timer = null; }
+      if (badge) { badge.remove(); badge = null; }
+      if (touchPickN > 0) {
+        slotPickAmount(el.dataset.container, +el.dataset.index, touchPickN);
+        touchPickN = 0;
+        return;
+      }
       if (!longPressed) slotAction(el.dataset.container, +el.dataset.index, false);
     });
-    el.addEventListener('pointerleave', () => { if (timer) { clearTimeout(timer); timer = null; } });
+    el.addEventListener('pointerleave', () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (badge) { badge.remove(); badge = null; }
+      touchPickN = 0;
+    });
   }
 
   /* ---------- 構築 ---------- */
