@@ -325,8 +325,9 @@
       this.mobs = [];
       this.atlas = world.solidMaterial.map;
       this.spawnTimer = 0;
-      this.maxHostile = 10;
-      this.maxPassive = 10;
+      // v0.13.4: モブの湧き量を増加 (敵 10→16 / 動物 10→14)
+      this.maxHostile = 16;
+      this.maxPassive = 14;
       this.dragonSpawned = false;   // v0.13.2: エンダードラゴンを一度だけスポーン
     }
 
