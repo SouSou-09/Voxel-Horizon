@@ -218,7 +218,7 @@
         // スペクテイターは空中からスタート
         player.pos.y += 14;
       }
-      if (player.gameMode === 'creative') giveCreativeKit(player);
+      // v0.13.4: クリエイティブの初期キットは廃止 (ブロック一覧パネルから必要な物だけ取る)
     }
     // HUD のモード表示を更新
     document.body.classList.toggle('mode-spectator', player.gameMode === 'spectator');
