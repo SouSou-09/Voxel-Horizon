@@ -8,7 +8,8 @@
 (function (global) {
   'use strict';
 
-  const OMNIP2P_URL = 'https://cdn.jsdelivr.net/gh/2chkakinie-arch/OmniP2P@main/v3.js';
+  // v0.13.4: ローカル同梱版を使う (Discord Activity 等のCDN制限環境でも動作)
+  const OMNIP2P_URL = 'js/vendor/omnip2p.js';
   const RELAYS = [
     'wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.band',
     'wss://nostr.wine', 'wss://relay.snort.social', 'wss://nostr.mom',
